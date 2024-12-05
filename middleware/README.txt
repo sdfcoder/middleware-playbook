@@ -1,12 +1,12 @@
 # middleware deployment
 ## 简介
-本项目旨在提供移动云通用标准组件的部署安装功能。使用ansible剧本完成各个组件的推送安装和初始化设置。
+本项目旨在提供通用标准组件的部署安装功能。使用ansible剧本完成各个组件的推送安装和初始化设置。
 
 
 ## 说明
 ** 1. 对前期进行剧本开发、承担组件部署维护的南方基地/SRE同事表示感谢 **
 ** 2. 组件安装包打包在 middleware-teg-YYMM.tar.gz
-** 3. 安装前需具备ansible环境（移动云各节点默认自带）；完成系统初始化（push_init脚本）
+** 3. 安装前需具备ansible环境（各节点默认自带）；完成系统初始化（push_init脚本）
 ** 4. 使用apps用户进行统一部署推送，部署节点apps具备sudo权限 （推送/etc/sudoer.d/black_white）文件权限640所属root
 ** 5. 编译后的组件均打包存放在 middleware-teg-MMDD/roles/sharestorage/apps/svr/目录下）#md5值#
 ** 6. 建议重置程序文件用户、组及权限 ** 
