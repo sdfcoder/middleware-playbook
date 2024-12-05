@@ -1,0 +1,44 @@
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+     13802883042@139.com
+   }
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id NodeB
+}
+
+vrrp_script chk_redis {
+    script "/apps/sh/keepalived_scripts/redis_check.sh #backup_ip# 6379"
+    interval 2
+    timeout 2
+    fall 3
+}
+
+vrrp_instance VI_1 {
+    state BACKUP
+    interface #dev#
+    virtual_router_id #router_id#
+    priority 99
+    advert_int 1
+    smtp alert
+    nopreempt
+    track_interface {
+        #dev#
+    }
+    track_script {
+        chk_redis
+    }
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        #virtual_ip# dev #dev# label #dev#:1
+    }
+    notify_master "/apps/sh/keepalived_scripts/redis_master.sh 127.0.0.1 #master_ip# 6379"
+    notify_backup "/apps/sh/keepalived_scripts/redis_backup.sh 127.0.0.1 #master_ip# 6379"
+    notify_fault "/apps/sh/keepalived_scripts/redis_fault.sh"
+    notify_stop "/apps/sh/keepalived_scripts/redis_stop.sh"
+}

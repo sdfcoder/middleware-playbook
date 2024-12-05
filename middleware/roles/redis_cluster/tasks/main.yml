@@ -1,0 +1,58 @@
+---
+- name: install_ruby_package
+  yum: name={{item}} state=present
+  with_items: [ruby, rubygems]
+  become: yes
+  become_user: root
+  when: cluster_role == 'creator'
+  tags:
+    - install_ruby_package
+
+- name: copy_redis_gem
+  synchronize: mode=push src="redis-3.3.3.gem" dest="/apps/svr/redis-{{redis_version}}_{{redis_port}}/src/" compress=yes owner=yes group=yes
+  become: yes
+  when: cluster_role == 'creator'
+  tags:
+    - copy_redis_gem
+
+- name: install_redis_gem
+  command: gem install --local /apps/svr/redis-{{redis_version}}_{{redis_port}}/src/redis-3.3.3.gem
+  become: yes
+  become_user: root
+  when: cluster_role == 'creator'
+  tags:
+    - install_redis_gem
+
+- name: create_redis_cluster
+  shell: echo yes | /apps/svr/redis_{{master_port}}/src/redis-cli --cluster create {{cluster_members[0]}}:{{master_port}} {{cluster_members[0]}}:{{slave_port}} {{cluster_members[1]}}:{{master_port}} {{cluster_members[1]}}:{{slave_port}} {{cluster_members[2]}}:{{master_port}} {{cluster_members[2]}}:{{slave_port}} --cluster-replicas 1 -a {{redis_password}}
+  when: cluster_role == 'creator'
+  tags:
+    - create_redis_cluster
+
+- name: reset_redis_master_password
+  template: src="redis.conf.j2" dest="/apps/conf/redis_{{redis_port}}/redis.conf" owner=apps group=apps mode=0755
+  vars:
+    - redis_port: "{{master_port}}"
+    - set_password: 'yes'
+    - rdb_switch: 'on'
+    - aof_switch: 'on'
+  tags:
+    - reset_redis_master_password
+
+- name: reset_redis_slave_password
+  template: src="redis.conf.j2" dest="/apps/conf/redis_{{redis_port}}/redis.conf" owner=apps group=apps mode=0755
+  vars:
+    - redis_port: "{{slave_port}}"
+    - set_password: 'yes'
+    - rdb_switch: 'on'
+    - aof_switch: 'on'
+  tags:
+    - reset_redis_slave_password
+
+- name: restart_redis_service
+  command: /apps/sh/redis_{{item}}.sh restart
+  with_items:
+    - "{{master_port}}"
+    - "{{slave_port}}"
+  tags:
+    - restart_redis_service

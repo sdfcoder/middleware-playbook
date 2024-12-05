@@ -1,0 +1,162 @@
+---
+#### Install zookeeper_svr
+- name: init_zookeeper_dirs
+  file: path=/apps/{{item}}/zookeeper_{{ zookeeper_client_port }}  state=directory owner=apps group=apps mode=0775
+  with_items: [conf,data,logs]
+  tags:
+    - init_zookeeper_dirs
+
+
+#### install  zookeeper
+- name: init_zookeeper_svr
+  unarchive: src="../roles/sharestorage/apps/svr/zookeeper-{{zookeeper_version}}.tar.gz" dest="/apps/svr/" owner=apps group=apps
+  tags:
+    - init_zookeeper_svr
+
+- name: set_zkEnv_JAVA_HOME
+  lineinfile: 
+    dest="/apps/svr/zookeeper-{{zookeeper_version}}/bin/zkEnv.sh" 
+    insertafter='!/usr/bin/env' 
+    line='source /apps/sh/apps_env.sh' 
+    state=present
+  tags:
+    - set_zkEnv_JAVA_HOME
+
+- name: chown_owner_to_apps
+  file:
+    path: /apps/svr/zookeeper-{{zookeeper_version}}
+    state: directory
+    owner: apps
+    group: apps
+  tags:
+    - chown_owner_to_apps
+
+- name: link_zookeeper_{{ zookeeper_client_port }}
+  file: src="/apps/svr/zookeeper-{{zookeeper_version}}" dest="/apps/svr/zookeeper_{{ zookeeper_client_port }}" state=link force=yes group=apps owner=apps
+  tags:
+    - link_zookeeper_{{ zookeeper_client_port }}
+
+- name: link_zookeeper_{{ zookeeper_client_port }}_dirs
+  file: src="/apps/{{item.src}}/zookeeper_{{ zookeeper_client_port }}" dest="/apps/svr/zookeeper_{{ zookeeper_client_port }}/{{item.dest}}" state=link force=yes group=apps owner=apps
+  with_items:
+    - { src: 'conf', dest: 'conf' }
+    - { src: 'data', dest: 'data' }
+    - { src: 'logs', dest: 'logs' }
+  tags:
+    - link_zookeeper_{{ zookeeper_client_port }}_dirs
+
+- name: init_zookeeper_{{ zookeeper_client_port }}_sh
+  copy: 
+    src: zookeeper.sh 
+    dest: "/apps/sh/" 
+    owner: apps
+    group: apps
+    mode: 0755
+  tags:
+    - init_zookeeper_{{ zookeeper_client_port }}_sh
+
+- name: config_zoo_cfg
+  template:
+    src: zoo.cfg.j2
+    dest: "{{ zookeeper_conf_dir }}/zoo.cfg"
+    owner: apps
+    group: apps
+    mode: 0755
+  tags:
+    - config_zoo_cfg
+
+- name: config_zkServer_sh
+  template:
+    src: zkServer.sh.j2
+    dest: /apps/svr/zookeeper-{{zookeeper_version}}/bin/zkServer.sh
+    owner: apps
+    group: apps
+    mode: 0775
+  tags:
+    - config_zkServer_sh
+
+- name: config_myid
+  template:
+    src: myid.j2
+    dest: "{{ zookeeper_data_dir }}/myid"
+    owner: apps
+    group: apps
+    mode: 0755
+  tags:
+    - config_zoo_myid
+
+- name: config_log4j_properties
+  template:
+    src: log4j.properties.j2
+    dest: "{{ zookeeper_conf_dir }}/log4j.properties"
+    owner: apps
+    group: apps
+  tags:
+    - config_log4j_properties 
+
+- name: copy__zoo_sample
+  copy:
+    src:  "{{ item }}"
+    dest: "{{ zookeeper_conf_dir }}/"
+    owner: apps
+    group: apps
+    mode: 0755
+  with_items: [ 'configuration.xsl' , 'zoo_sample.cfg' ]
+  tags:
+    - copy_zoo_sample
+
+- name: copy_jmx_authfile
+  copy: 
+    src : "{{ item }}"
+    dest : "{{ zookeeper_conf_dir }}"
+    owner: apps
+    group: apps
+    mode: 0600
+  with_items: ["jmxremote.access", "jmxremote.password"]
+  tags:
+    - copy_jmx_authfile
+
+- name: init_zookeeper_logrotate
+  become_user: root
+  become: yes
+  template: src="zookeeper_log.j2" dest="/etc/logrotate.d/zookeeper" owner=root group=root mode=0644
+  tags:
+    - init_zookeeper_logrotate
+
+- name: check_zookeeper
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep zookeeper.sh | wc -l
+  register: check_zookeeper
+  tags:
+    - check_zookeeper
+
+- name: auto_start_zookeeper_apps
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/sh/zookeeper.sh start\"" >> /etc/rc.local
+  when: check_zookeeper.stdout == '0' and setenv == 'apps'
+  tags:
+    - auto_start_zookeeper_apps
+
+- name: auto_start_zookeeper_deployer
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - deployer -c \"/apps/sh/zookeeper.sh start\"" >> /etc/rc.local
+  when: check_zookeeper.stdout == '0' and setenv == 'deployer'
+  tags:
+    - auto_start_zookeeper_deployer
+
+- name: auto_start_zookeeper_root
+  become_user: root
+  become: yes
+  shell: echo "\"/apps/sh/zookeeper.sh start\"" >> /etc/rc.local
+  when: check_zookeeper.stdout == '0' and setenv == 'all'
+  tags:
+    - auto_start_zookeeper_root
+
+- name: exec_rc_local
+  become_user: root
+  become: yes
+  shell: sudo chmod +x /etc/rc.d/rc.local
+  tags:
+    - exec_rc_local
+

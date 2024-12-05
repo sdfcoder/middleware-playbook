@@ -1,0 +1,115 @@
+---  
+- name: init_tomcat_dirs
+  file: path=/apps/{{item}}/tomcat_{{http_port}} state=directory owner=apps group=apps mode=0775
+  with_items: [logs,run]
+  tags:
+    - init_tomcat_dirs
+
+- name: init_sh_dir
+  file: path=/apps/sh state=directory owner=apps group=apps mode=0775
+  tags:
+    - init_sh_dir
+
+- name: init_tomcat_svr
+  unarchive: src="../../sharestorage/apps/svr/apache-tomcat-{{tomcat_version}}.tar.gz" dest="/apps/svr/" owner=apps group=apps mode=0775
+  tags:
+    - init_tomcat_svr
+
+- name: check_svr_present
+  shell: ls /apps/svr/apache-tomcat-{{tomcat_version}}-{{http_port}}
+  ignore_errors: True
+  register: check_result_svr 
+
+- name: check_data_present
+  shell: ls /apps/data/tomcat_{{http_port}}
+  ignore_errors: True
+  register: check_result_data
+
+- name: check_conf_present
+  shell: ls /apps/conf/tomcat_{{http_port}}
+  ignore_errors: True
+  register: check_result_conf
+ 
+- name: rename_tomcat_svr
+  shell: mv /apps/svr/apache-tomcat-{{tomcat_version}} /apps/svr/apache-tomcat-{{tomcat_version}}-{{http_port}}
+  tags: 
+    - rename_tomcat_svr
+  when: check_result_svr | failed
+
+- name: init_tomcat_data
+  unarchive: src="tomcat_data.tar.gz" dest="/apps/data/" owner=apps group=apps mode=0775
+  tags:
+    - init_tomcat_svr
+
+- name: rename_tomcat_data
+  shell: mv /apps/data/tomcat_data /apps/data/tomcat_{{http_port}}
+  tags:
+     - rename_tomcat_data
+  when: check_result_data | failed
+
+- name: init_tomcat_conf
+  unarchive: src="tomcat_conf.tar.gz" dest="/apps/conf/" owner=apps group=apps mode=0775
+  tags:
+    - init_tomcat_conf
+
+- name: rename_tomcat_conf
+  shell: mv /apps/conf/tomcat_conf /apps/conf/tomcat_{{http_port}}
+  tags: 
+    - rename_tomcat_conf
+  when: check_result_conf | failed
+  
+- name: link_tomcat
+  file: src="/apps/svr/apache-tomcat-{{tomcat_version}}-{{http_port}}" dest="/apps/svr/tomcat_{{http_port}}" state=link force=yes group=apps owner=apps
+  tags:
+    - link_tomcat
+
+- name: link_tomcat_dirs
+  file: src="/apps/{{item}}/tomcat_{{http_port}}" dest="/apps/svr/tomcat_{{http_port}}/{{item}}" state=link force=yes group=apps owner=apps
+  with_items: [conf,logs,run]
+  tags:
+    - link_tomcat_dirs
+
+- name: link_tomcat_data
+  file: src="/apps/data/tomcat_{{http_port}}" dest="/apps/svr/tomcat_{{http_port}}/webapps" state=link force=yes group=apps owner=apps
+  tags:
+    - link_tomcat_data
+
+- name: init_script
+  template: src=tomcat.sh dest="/apps/sh/tomcat_{{http_port}}.sh" owner=apps group=apps mode=0775
+  tags:
+    - init_script
+
+- name: init_tomcat_users.xml
+  template: src=tomcat-users.xml dest="/apps/conf/tomcat_{{http_port}}/tomcat-users.xml" owner=apps group=apps mode=0775
+  tags:
+    - init_tomcat_user.xml
+
+- name: init_server_xml
+  template: src=server.xml dest="/apps/conf/tomcat_{{http_port}}/server.xml" owner=apps group=apps mode=0775
+  tags:
+    - init_server_xml
+
+#### Init tomcat_logrotate
+- name: init_tomcate_logrotate
+  become_user: root 
+  become: yes
+  template: src="tomcat_log.j2" dest="/etc/logrotate.d/tomcat-{{http_port}}" owner=root group=root mode=0644
+  tags:
+    - init_tomcat_logrotate  
+
+#### Check_tomcat_auto
+- name: check_tomcat
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep 'tomcat' |wc -l
+  register: check_tomcat
+  tags:
+    - check_tomcat
+
+#### Enable_auto_start
+- name: auto_start_tomcat_apps
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/sh/tomcat_{{http_port}}.sh start\"" >> /etc/rc.local
+  when: check_tomcat.stdout == '0' and setenv == 'apps'
+  tags:
+  - auto_start_tomcat_apps
+

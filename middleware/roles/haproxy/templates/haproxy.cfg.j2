@@ -1,0 +1,61 @@
+global
+	chroot        /apps/svr/haproxy
+	log           127.0.0.1 local2
+	maxconn       65536
+	user          apps
+	group         apps
+	nbproc        10
+	ulimit-n      231097
+	pidfile       /apps/run/haproxy/haproxy.pid
+	stats socket  /apps/run/haproxy/haproxy.sock level admin
+	tune.ssl.default-dh-param 1024
+        ssl-default-bind-options no-sslv3 no-tlsv10
+        ssl-default-bind-ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4:!DH:!DHE
+        ssl-default-server-options no-sslv3 no-tlsv10
+        ssl-default-server-ciphers ECDHE-RSA-AES128-GCM-SHA256:ECDHE:ECDH:AES:HIGH:!NULL:!aNULL:!MD5:!ADH:!RC4:!DH:!DHE
+	daemon
+
+defaults
+	log     global
+	mode    http
+	option  httplog
+	option  dontlognull
+	option  forwardfor
+    option  redispatch
+	retries 3
+	maxconn 65535
+	timeout connect 5s
+	timeout client 30s
+	timeout server 30s
+	timeout check   1s
+	timeout http-request    10s
+	timeout http-keep-alive 10s
+
+listen Stats 
+        bind *:10000
+	mode  http
+	stats enable
+	stats uri /stats
+	stats show-node
+	stats show-legends
+	stats auth admin:Admin@139
+
+# dynamic-static separation
+#frontend http_web
+#        mode http
+#        bind 0.0.0.0:80
+#        option httpclose
+#        option forwardfor
+#        acl vip_1 hdr(Host)  192.168.182.64
+#        acl vip_2 hdr(Host)  192.168.182.77
+#        use_backend vip_1_servers if vip_1
+#        use_backend vip_2_servers if vip_2
+
+# tomcat load balancing
+#backend vip_1_servers
+#        balance roundrobin
+#        server tomcat_web1 192.168.182.15:8080 check inter 1500 rise 3 fall 3
+
+#backend vip_2_servers
+#        balance roundrobin
+#        server tomcat_web2 192.168.182.16:8080 check inter 1500 rise 3 fall 3

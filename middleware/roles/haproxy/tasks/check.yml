@@ -1,0 +1,45 @@
+---
+#### Check haproxy version and status
+
+- name: check_version
+  shell: sudo /apps/svr/haproxy/sbin/haproxy -v | grep -i 'version'
+  register: version
+
+- name: debug
+  debug: var=version.stdout verbosity=0
+
+- name: start_haproxy
+  shell: sudo /apps/sh/haproxy.sh start
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0
+
+- name: check_haproxy_status
+  shell: sudo /apps/sh/haproxy.sh status
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0
+
+- name: stop_haproxy
+  shell: sudo /apps/sh/haproxy.sh stop
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0
+
+#- name: check_kernel_parameter
+#  shell: sudo /usr/bin/grep -vE '^#' /etc/sysctl.conf|grep 'net.ipv4.ip_local_port_range' | wc -l
+#  register: kernel_parameter
+#  tags:
+#    - check_kernel_parameter
+
+#- name: adjust_kernel_parameter
+#  shell: sudo /usr/bin/echo 'net.ipv4.ip_local_port_range = 1025 65534' >> /etc/sysctl.conf
+#  when: kernel_parameter.stdout == '0'
+
+#- name: in_force_parameter
+#  shell: modprobe nf_conntrack && sysctl -p
+#  become_user: root
+#  become: yes

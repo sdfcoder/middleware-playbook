@@ -1,0 +1,9 @@
+---
+- hosts: all
+  gather_facts: false
+  roles:
+    - { name: redis, redis_port: "6379", set_password: 'yes', when: redis_mode == 'cluster'}
+    - { name: redis, redis_port: "6380", set_password: 'yes', when: redis_mode == 'cluster'}
+
+    - role: redis_cluster
+      when: redis_mode == 'cluster'

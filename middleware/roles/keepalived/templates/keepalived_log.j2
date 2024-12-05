@@ -1,0 +1,12 @@
+/apps/logs/keepalived/keepalived.log
+{
+        su root root
+        create 0644 root root
+        monthly
+        dateext
+        compress
+        copytruncate
+        notifempty
+        rotate 12
+        missingok
+}

@@ -1,0 +1,98 @@
+---
+#### Install keepalived_config
+- name: init_conf_keepalived
+  template: src="keepalived.j2" dest="/apps/conf/keepalived/keepalived" owner=apps group=apps mode=0775
+  tags:
+    - init_conf_keepalived
+
+- name: init_conf_keepalived.conf
+  template: src="keepalived_{{ident}}.conf.j2" dest="/apps/conf/keepalived/keepalived.conf" owner=apps group=apps mode=0775
+  tags:
+    - init_conf_keepalived.conf
+
+- name: init_vip
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#virtual_ip#' replace='{{virtual_ip}}' owner=apps group=apps mode=0775
+
+- name: init_router_id
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#router_id#' replace='{{router_id}}' owner=apps group=apps mode=0775
+
+- name: init_dev
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#dev#' replace='{{dev}}' owner=apps group=apps mode=0775
+
+- name: init_weight
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#weight#' replace='{{weight}}' owner=apps group=apps mode=0775
+
+- name: init_priority
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#priority#' replace='{{priority}}' owner=apps group=apps mode=0775
+
+- name: init_auth
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#auth#' replace='{{auth}}' owner=apps group=apps mode=0775
+#### Init auto start
+- name: check_keepalived
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep keepalived.sh | wc -l
+  register: keepalived_check
+  tags:
+    - check_keepalived
+
+- name: backup_rc_local
+  become: yes
+  become_user: root
+  shell: "/usr/bin/cp -rp /etc/rc.d/rc.local /etc/rc.d/rc.local.bak.`date \"+%Y%m%d%H%M\"`"
+  when: keepalived_check.stdout == '0'
+  tags:
+    - backup_rc_local
+
+- name: insert_auto_start
+  become: yes
+  become_user: root
+  shell: /usr/bin/echo "/apps/sh/keepalived.sh start" >> /etc/rc.local
+  when: keepalived_check.stdout == '0'
+  tags:
+    - insert_auto_start
+
+- name: chage_rc_local_mode
+  become: yes
+  become_user: root
+  shell: "/usr/bin/chmod +x /etc/rc.d/rc.local"
+  when: keepalived_check.stdout == '0'
+  tags:
+    - chage_rc_local_mode
+
+#### Init keepalived log
+- name: check_keepalived_log
+  shell: /usr/bin/grep -vE '^#' /etc/rsyslog.conf | grep keepalived.log | wc -l
+  register: keepalived_log
+  tags:
+    - check_keepalived_log
+
+- name: backup_rsyslog_conf
+  become: yes
+  become_user: root
+  shell: "/usr/bin/cp -rp /etc/rsyslog.conf /etc/rsyslog.conf.bak.`date \"+%Y%m%d%H%M\"`"
+  when: keepalived_log.stdout == '0'
+  tags:
+    - backup_rsyslog_conf
+
+- name: insert_keepalived_log
+  become: yes
+  become_user: root
+  shell: /usr/bin/echo -e "\n# Save keepalived messages to keepalived.log\nlocal1.*\t\t\t\t\t\t/apps/logs/keepalived/keepalived.log" >> /etc/rsyslog.conf
+  when: keepalived_log.stdout == '0'
+  tags:
+    - insert_keepalived_log
+
+#### Restart rsyslog
+- name: restart_rsyslog
+  become: yes
+  become_user: root
+  service: name=rsyslog state=restarted
+  tags:
+    - restart_rsyslog
+
+#### Install keepalived_logrotate
+- name: init_keepalived_logrotate
+  template: src="keepalived_log.j2" dest="/etc/logrotate.d/keepalived" owner=root group=root mode=0644
+  become_user: root
+  become: yes
+  tags:
+    - init_keepalived_logrotate

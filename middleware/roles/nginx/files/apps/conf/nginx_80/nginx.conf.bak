@@ -1,0 +1,146 @@
+user apps;
+worker_processes  1;
+
+error_log  /apps/logs/nginx_80/error.log;
+#error_log  logs/error.log  notice;
+#error_log  logs/error.log  info;
+
+pid /apps/run/nginx_80/nginx.pid;
+
+events {
+    worker_connections  1024;
+}
+
+
+http {
+proxy_cache_path /apps/svr/nginx_80/proxy_temp levels=1:2 keys_zone=cache_one:4000m inactive=2d max_size=20g;
+upstream backend {
+    server 127.0.0.1:80 weight=1;
+    sticky;
+}
+
+    include       mime.types;
+    default_type  application/octet-stream;
+
+    #log_format  main  '$remote_addr - $remote_user [$time_local] "$request" '
+    #                  '$status $body_bytes_sent "$http_referer" '
+    #                  '"$http_user_agent" "$http_x_forwarded_for"';
+
+    #access_log  /apps/logs/nginx_80/access.log  main;
+
+    sendfile        on;
+    #tcp_nopush     on;
+
+    #keepalive_timeout  0;
+    keepalive_timeout  65;
+
+    #gzip  on;
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        #charset koi8-r;
+
+        #access_log  /apps/logs/nginx_80/host.access.log  main;
+
+        location / {
+            # python web server forward
+            #
+            #include uwsgi_params;
+            #uwsgi_pass 127.0.0.1:3031;
+            proxy_cache cache_one;
+            proxy_cache_valid  200 304 12h;
+            proxy_cache_key $uri$is_args$args;
+            proxy_set_header Host  $host;
+            proxy_set_header X-Forwarded-For  $remote_addr;
+            expires 2d;
+             concat on;
+             concat_max_files 30;
+#             root   html;
+            root /apps/data/nginx_80;
+            index  index.html index.htm;
+        }
+
+        #error_page  404              /404.html;
+
+        # redirect server error pages to the static page /50x.html
+        #
+        error_page   500 502 503 504  /50x.html;
+        location = /50x.html {
+        #    root   html;
+	    root /apps/data/nginx_80;
+        }
+        location = /nginx_status {
+            stub_status on;
+            access_log off;
+            allow 127.0.0.1;
+            deny all;
+        }
+        location = /status {
+                include        fastcgi_params;
+                fastcgi_param  SCRIPT_FILENAME $document_root$fastcgi_script_name;
+                fastcgi_index  index.php;
+                fastcgi_pass   127.0.0.1:9000;
+        }
+        # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+        #
+        #location ~ \.php$ {
+        #    proxy_pass   http://127.0.0.1;
+        #}
+
+        # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+        #
+        location ~ \.php$ {
+            root           /apps/data/nginx_80;
+            fastcgi_pass   127.0.0.1:9000;
+            fastcgi_index  index.php;
+            fastcgi_param  SCRIPT_FILENAME  $document_root$fastcgi_script_name;
+            include        fastcgi_params;
+        }
+
+        # deny access to .htaccess files, if Apache's document root
+        # concurs with nginx's one
+        #
+        #location ~ /\.ht {
+        #    deny  all;
+        #}
+    }
+
+
+    # another virtual host using mix of IP-, name-, and port-based configuration
+    #
+    #server {
+    #    listen       8000;
+    #    listen       somename:8080;
+    #    server_name  somename  alias  another.alias;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+
+    # HTTPS server
+    #
+    #server {
+    #    listen       443 ssl;
+    #    server_name  localhost;
+
+    #    ssl_certificate      cert.pem;
+    #    ssl_certificate_key  cert.key;
+
+    #    ssl_session_cache    shared:SSL:1m;
+    #    ssl_session_timeout  5m;
+
+    #    ssl_ciphers  HIGH:!aNULL:!MD5;
+    #    ssl_prefer_server_ciphers  on;
+
+    #    location / {
+    #        root   html;
+    #        index  index.html index.htm;
+    #    }
+    #}
+
+}

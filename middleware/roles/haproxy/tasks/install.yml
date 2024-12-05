@@ -1,0 +1,40 @@
+---
+#### Unarchive haproxy_tar
+- name: unarchive_haproxy_tar
+  unarchive: src="../roles/sharestorage/apps/svr/haproxy-1.7.12.tar.gz" dest="/apps/svr/" owner=apps group=apps
+  become: yes
+  tags:
+    - unarchive_haproxy_tar
+
+#### Install haproxy_svr
+- name: init_haproxy_dirs
+  file: path=/apps/{{item}}/haproxy state=directory owner=apps group=apps mode=0775
+  with_items: [conf,logs,run]
+  tags:
+    - init_haproxy_dirs
+
+- name: link_haproxy
+  file: src="/apps/svr/haproxy-{{haproxy_version}}" dest="/apps/svr/haproxy" state=link force=yes group=apps owner=apps
+  tags:
+    - link_haproxy
+
+- name: link_haproxy_dirs
+  file: src="/apps/{{item}}/haproxy" dest="/apps/svr/haproxy/{{item}}" state=link force=yes group=apps owner=apps
+  with_items: [conf,logs,run]
+  tags:
+    - link_haproxy_dirs
+
+- name: init_haproxy_sh
+  synchronize: mode=push src="apps/sh/" dest="/apps/sh/" compress=yes
+  tags:
+    - init_haproxy_sh
+
+#### Make sure YUM Packages
+- name: init_yum_pkgs
+  yum: name={{item}} state=present
+  with_items: [openssl,openssl-devel,ncurses-devel,unixODBC,unixODBC-devel,fop,bzip2-devel,pcre-devel,libnl3*,popt-devel,nc,lrzsz,gcc,psmisc]
+  become: yes
+  become_user: root
+  ignore_errors: yes
+  tags:
+    - init_yum_pkgs

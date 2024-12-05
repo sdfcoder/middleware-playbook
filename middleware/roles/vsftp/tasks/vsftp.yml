@@ -1,0 +1,84 @@
+  - name: yum install
+    become: yes
+    become_user: root
+    yum: name=vsftpd
+    tags:
+      - yum_install
+
+  - name: add user
+    become: yes
+    become_user: root
+    shell: useradd  -d /home/vftpuser -s /sbin/false vftpuser
+    ignore_errors: yes
+    tags:
+      - user_add
+
+  - name: push vsftp conf
+    become: yes
+    become_user: root
+    copy: owner=root group=root src="vsftpd.conf" dest="/etc/vsftpd/vsftpd.conf"
+    tags:
+      - push_vsftpd_conf
+
+  - name: push user txt
+    become: yes
+    become_user: root
+    copy: owner=root group=root src="vsftpd.user" dest="/etc/vsftpd/vftpuser.txt"
+    tags:
+      - push_user_txt
+
+  - name: init user
+    become: yes
+    become_user: root
+    shell: echo "{{item.value.name}}" >> /etc/vsftpd/vftpuser.txt;echo "{{item.value.passwd}}" >> /etc/vsftpd/vftpuser.txt
+    with_dict: "{{ user }}"
+    tags:
+      - user_add
+
+  - name: push user conf
+    become: yes
+    become_user: root
+    file: name="/etc/vsftpd/user_conf" state=directory owner=root group=root mode=0775
+    tags:
+      - push_user_conf
+
+  - name: push pam 
+    become: yes
+    become_user: root
+    copy: owner=root group=root src="vsftpd.pam" dest="/etc/pam.d/vsftpd" owner=root
+    tags:
+      - push_user_txt
+
+  - name: create user db
+    become: yes
+    become_user: root
+    shell: db_load -T -t hash -f /etc/vsftpd/vftpuser.txt /etc/vsftpd/vftpuser.db
+    tags:
+      - create_user_db
+
+  - name: init_user_conf
+    template: src=user_name  dest="/etc/vsftpd/user_conf/{{item.value.name}}"
+    with_dict: "{{ user }}"
+    tags: 
+      - init_user_conf
+    become: yes
+    become_user: root
+
+  - name: init user path
+    become: yes
+    become_user: root
+    shell: echo "local_root="{{item.value.dir}}"" >> /etc/vsftpd/user_conf/{{item.value.name}}
+    with_dict: "{{ user }}"
+    tags:
+      - init_user_path
+
+  - name: start vsftp
+    shell: systemctl start vsftpd
+    become: yes
+    become_user: root
+  
+  - name: enable vsftp
+    shell: systemctl enable vsftpd
+    become: yes
+    become_user: root
+ 

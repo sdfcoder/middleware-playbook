@@ -1,0 +1,41 @@
+---
+#### Install rabbitmq_5672_svr
+##for deployer
+- name: copy_rabbitmq_5672_cookie_deployer
+  copy: mode=push src="apps/conf/rabbitmq_5672/erlang.cookie" dest="/home/deployer/.erlang.cookie" mode=0400 owner=deployer group=apps
+  become: yes
+  become_user: root
+  when: setenv == 'deployer'
+  tags:
+    - copy_rabbitmq_5672_cookie_deployer
+
+- name: copy_rabbitmq_5672_cookie_apps
+  copy: mode=push src="apps/conf/rabbitmq_5672/erlang.cookie" dest="/home/apps/.erlang.cookie" mode=0400 owner=apps group=apps
+  become: yes
+  become_user: root
+  when: setenv == 'apps'
+  tags:
+    - copy_rabbitmq_5672_cookie_apps
+
+- name: copy_rabbitmq_5672_cookie_all
+  copy: mode=push src="apps/conf/rabbitmq_5672/erlang.cookie" dest="/root/.erlang.cookie" mode=0400 owner=root group=root
+  become: yes
+  become_user: root
+  when: setenv == 'all'
+  tags:
+    - copy_rabbitmq_5672_cookie_all
+
+- name: sync_rabbitmq_cluster_conf
+  copy: mode=push src="apps/conf/rabbitmq_5672/rabbitmq.config" dest="/apps/conf/rabbitmq_5672/rabbitmq.config" mode=0775 owner=apps group=apps
+  become: yes
+  tags:
+    - sync_rabbitmq_cluster_conf
+
+- name: init_rabbitmq_cluster_conf
+  replace: dest="/apps/conf/rabbitmq_5672/rabbitmq.config" regexp={{item.reg}} replace={{item.rep}} owner=apps group=apps mode=0775
+  become: yes
+  become_user: root
+  with_items:
+    - { reg: "#cluster_nodes#", rep: "{{cluster_nodes}}" }
+  tags:
+    - init_rabbitmq_cluster_conf

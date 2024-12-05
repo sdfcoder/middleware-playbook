@@ -1,0 +1,24 @@
+---
+start: 0
+shutdown_port: 8005
+http_redirect_port: 8443
+http_conn_tmout: 20000
+http_max_threads: 200
+is_enabled_ajp: 1
+ajp_port: 8009
+ajp_redirect_port: 8443
+is_enabled_ssl: 1
+ssl_port: 8443
+ssl_max_threads: 200
+ssl_max_connection: 10000
+keystore_file: conf/keystore
+keystore_pass: ToMcat@312
+heapsize: 1024m
+maxheapsize: 1024m
+add_java_opts: ""
+is_enabled_jmx: 0
+is_enabled_manager: 1
+permsize: 512m
+maxpermsize: 512m
+metaspacesize: 2048m
+maxmetaspacesize: 2048m

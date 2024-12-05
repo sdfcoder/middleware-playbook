@@ -1,0 +1,123 @@
+---
+#### Install kafka_svr
+- name: init_kafka_dirs
+  file: path=/apps/{{item}}/kafka_{{kafka_client_port}}  state=directory owner=apps group=apps mode=0775
+  with_items: [conf,data,logs,run]
+  tags:
+    - init_kafka_dirs
+    
+- name: init_kafka_{{kafka_client_port}}_svr
+  unarchive: src="../roles/sharestorage/apps/svr/kafka_{{scala_version}}-{{kafka_version}}.tgz" dest="/apps/svr/" owner=apps group=apps mode=0775
+  become: yes
+  tags:
+    - init_kafka_{{kafka_client_port}}_svr
+
+- name: link_kafka_{{kafka_client_port}}
+  file: src="/apps/svr/kafka_{{scala_version}}-{{kafka_version}}" dest="/apps/svr/kafka_{{kafka_client_port}}" state=link force=yes group=apps owner=apps
+  tags:
+    - link_kafka_{{kafka_client_port}}
+
+- name: link_kafka_{{kafka_client_port}}_dirs
+  file: src="/apps/{{item.src}}/kafka_{{ kafka_client_port }}" dest="/apps/svr/kafka_{{kafka_client_port}}/{{item.dest}}" state=link force=yes group=apps owner=apps
+  with_items:
+    - { src: 'data', dest: 'data' }
+    - { src: 'logs', dest: 'logs' }
+  tags:
+    - link_kafka_{{kafka_client_port}}_dirs
+
+- name: init_kafka_sh
+  template: 
+    src: kafka.sh.j2
+    dest: "/apps/sh/kafka.sh" 
+    owner: apps
+    group: apps
+    mode: 0755
+  tags:
+    - init_kafka_sh
+
+- name: init_kafka_run_class_sh
+  template:
+    src: kafka-run-class.sh.j2
+    dest: "/apps/svr/kafka_{{scala_version}}-{{kafka_version}}/bin/kafka-run-class.sh"
+    owner: apps
+    group: apps
+    mode: 0755
+  tags:
+    - init_kafka_run_class_sh
+
+- name: init_kafka_env_sh
+  template:
+    src: kafka-env.sh.j2
+    dest: "/apps/svr/kafka_{{scala_version}}-{{kafka_version}}/config/kafka-env.sh"
+    owner: apps
+    group: apps
+    mode: 0755
+  tags:
+    - init_kafka_env_sh
+
+- name: config_server_properties
+  template:
+    src: server.properties.j2
+    dest: "/apps/svr/kafka_{{scala_version}}-{{kafka_version}}/config/server.properties"
+    owner: apps
+    group: apps
+    mode: 0755
+  tags:
+    - config_server_properties
+
+- name: copy_jmx_authfile
+  copy: 
+    src : "{{item}}"
+    dest : "{{kafka_conf_dir}}/"
+    owner: apps
+    group: apps
+    mode: 0600
+  with_items: ["jmxremote.access", "jmxremote.password"]
+  tags:
+    - copy_jmx_authfile
+
+- name: init_kafka_logrotate
+  become_user: root
+  become: yes
+  template: src="kafka_log.j2" dest="/etc/logrotate.d/kafka" owner=root group=root mode=0644
+  tags:
+    - init_kafka_logrotate
+
+- name: check_kafka
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep kafka.sh | wc -l
+  register: check_kafka
+  tags:
+    - check_kafka
+
+- name: auto_start_kafka_apps
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/sh/kafka.sh start\"" >> /etc/rc.local
+  when: check_kafka.stdout == '0' and setenv == 'apps'
+  tags:
+    - auto_start_kafka_apps
+
+- name: auto_start_kafka_deployer
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - deployer -c \"/apps/sh/kafka.sh start\"" >> /etc/rc.local
+  when: check_kafka.stdout == '0' and setenv == 'deployer'
+  tags:
+    - auto_start_kafka_deployer
+
+- name: auto_start_kafka_root
+  become_user: root
+  become: yes
+  shell: echo "\"/apps/sh/kafka.sh start\"" >> /etc/rc.local
+  when: check_kafka.stdout == '0' and setenv == 'all'
+  tags:
+    - auto_start_kafka_root
+
+- name: exec_rc_local
+  become_user: root
+  become: yes
+  shell: sudo chmod +x /etc/rc.d/rc.local
+  tags:
+    - exec_rc_local
+
+

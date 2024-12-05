@@ -1,0 +1,12 @@
+/apps/logs/tomcat_{{http_port}}/*.log
+/apps/logs/tomcat_{{http_port}}/*.out
+{
+        su root root
+        daily
+        dateext
+        compress
+        copytruncate
+        notifempty
+        rotate 30
+        missingok 
+}

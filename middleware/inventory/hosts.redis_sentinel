@@ -1,0 +1,5 @@
+[redis-sentinel]
+10.142.71.133 redis_password=qwe123 redis_mode=sentinel start_service=true slave=false master_ip=10.142.71.133
+10.142.71.134 redis_password=qwe123 redis_mode=sentinel start_service=true slave=true master_ip=10.142.71.133
+10.142.71.135 redis_password=qwe123 redis_mode=sentinel start_service=true slave=true master_ip=10.142.71.133
+##one master,two slaves

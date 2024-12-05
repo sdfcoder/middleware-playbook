@@ -1,0 +1,5 @@
+[rabbitmq-standalone]
+10.142.71.133 rabbitmq_mode=cluster cluster_nodes=[\'rabbit@zjj01\',\'rabbit@zjj02\',\'rabbit@zjj03\'] setenv=apps
+10.142.71.134 rabbitmq_mode=cluster cluster_nodes=[\'rabbit@zjj01\',\'rabbit@zjj02\',\'rabbit@zjj03\'] setenv=apps
+10.142.71.135 rabbitmq_mode=cluster cluster_nodes=[\'rabbit@zjj01\',\'rabbit@zjj02\',\'rabbit@zjj03\'] setenv=apps
+#可使用apps|deployer|all针对性的设置erlang与rabbitmq的变量环境 

@@ -1,0 +1,78 @@
+---
+#### Init rabbitmq_5672
+- name: init_rabbitmq_5672_dirs
+  file: path=/apps/{{item}}/rabbitmq_5672 state=directory owner=apps group=apps mode=0775
+  with_items: [conf,logs,run,data]
+  tags:
+    - init_rabbitmq_5672_dirs
+
+- name: init_rabbitmq_5672_svr
+  unarchive: src="../roles/sharestorage/apps/svr/rabbitmq-server-generic-unix-3.8.2.tar.gz" dest="/apps/svr/" owner=apps group=apps mode=0775
+  tags:
+    - init_rabbitmq_5672_svr
+
+- name: init_rabbitmq_sh
+  copy: src="apps/sh/rabbitmq.sh" dest="/apps/sh/rabbitmq.sh" owner=apps group=apps mode=0775
+  become: yes
+  tags:
+    - init_rabbitmq_sh
+
+- name: link_rabbitmq_5672
+  file: src="/apps/svr/rabbitmq_server-3.8.2" dest="/apps/svr/rabbitmq_5672" state=link force=yes owner=apps group=apps
+  become: yes
+  tags:
+    - link_rabbitmq_5672
+
+- name: link_rabbitmq_5672_dirs
+  file: src="/apps/{{item}}/rabbitmq_5672" dest="/apps/svr/rabbitmq_5672/{{item}}" state=link force=yes owner=apps group=apps
+  with_items: [conf,logs,run,data]
+  become: yes
+  tags:
+    - link_rabbitmq_5672_dirs
+
+- name: init_rabbitmq_5672_conf
+  unarchive: src="apps/conf/rabbitmq_5672.tar.gz" dest="/apps/conf/" owner=apps group=apps mode=0775
+  tags:
+    - init_rabbitmq_5672_conf
+
+#### Init rabbitmq_server_logrotate
+- name: init_rabbitmq_logrotate
+  become_user: root 
+  become: yes
+  template: src="rabbitmq_log.j2" dest="/etc/logrotate.d/rabbitmq-server" owner=root group=root mode=0644
+  tags:
+    - init_rabbitmq_logrotate  
+
+#### Check_mq_auto
+- name: check_rabbitmq
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep 'rabbit' |wc -l
+  register: check_rabbitmq
+  tags:
+    - check_rabbitmq 
+
+
+#### Enable_auto_start
+- name: auto_start_rabbitmq_apps
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/sh/rabbitmq.sh start\"" >> /etc/rc.local
+  when: check_rabbitmq.stdout == '0' and setenv == 'apps'
+  tags:
+    - auto_start_rabbitmq_apps
+
+- name: auto_start_rabbitmq_deployer
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - deployer -c \"/apps/sh/rabbitmq.sh start\"" >> /etc/rc.local
+  when: check_rabbitmq.stdout == '0' and setenv == 'deployer'
+  tags:
+    - auto_start_rabbitmq_deployer
+
+- name: auto_start_rabbitmq_root
+  become_user: root
+  become: yes
+  shell: echo "\"/apps/sh/rabbitmq.sh start\"" >> /etc/rc.local
+  when: check_rabbitmq.stdout == '0' and setenv == 'all'
+  tags:
+    - auto_start_rabbitmq_root
+

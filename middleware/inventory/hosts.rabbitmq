@@ -1,0 +1,5 @@
+[rabbitmq-standalone]
+10.142.71.133 rabbitmq_mode=standalone setenv=apps
+10.142.71.134 rabbitmq_mode=standalone setenv=apps
+
+#可使用apps|deployer|all针对性的设置erlang与rabbitmq的变量环境

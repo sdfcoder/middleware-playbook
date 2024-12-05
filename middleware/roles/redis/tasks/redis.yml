@@ -1,0 +1,86 @@
+---
+# 单机版
+#### Install redis_svr
+- name: init_redis_dirs
+  file: path=/apps/{{item}}/redis_{{redis_port}} state=directory owner=apps group=apps mode=0775
+  with_items: [conf,logs,run,data]
+  become: yes
+  tags:
+    - init_redis_dirs
+
+- name: init_redis_svr
+  unarchive: src="../../sharestorage/apps/svr/redis-{{redis_version}}.tar.gz" dest="/apps/svr/" owner=apps group=apps mode=0775
+  tags:
+    - init_redis_svr
+
+- name: rename_redis
+  shell: mv /apps/svr/redis-{{redis_version}} /apps/svr/redis-{{redis_version}}_{{redis_port}}
+  tags:
+    - remove_redis
+  ignore_errors: yes
+
+- name: link_redis
+  file: src="/apps/svr/redis-{{redis_version}}_{{redis_port}}" dest="/apps/svr/redis_{{redis_port}}" state=link force=yes owner=apps group=apps
+  become: yes
+  tags:
+    - link_redis
+
+- name: link_redis_dirs
+  file: src="/apps/{{item}}/redis_{{redis_port}}" dest="/apps/svr/redis_{{redis_port}}/{{item}}" state=link force=yes owner=apps group=apps
+  with_items: [conf,logs,run,data]
+  become: yes
+  tags:
+    - link_redis_dirs
+
+- name: init_redis_conf
+  template: src="redis.conf.j2" dest="/apps/conf/redis_{{redis_port}}/redis.conf" owner=apps group=apps mode=0775
+  become: yes
+  tags:
+    - init_redis_conf
+
+- name: init_sh
+  template: src="redis.sh.j2" dest="/apps/sh/redis_{{redis_port}}.sh" owner=apps group=apps mode=0775
+  become: yes
+  tags:
+    - init_sh
+
+- name: init_redis_admin
+  template: src="redis-admin.j2" dest="/apps/svr/redis_{{redis_port}}/src/redis-admin" owner=apps group=apps mode=0775
+  become: yes
+  tags:
+    - init_redis_admin
+
+- name: start_redis_service
+  command: /apps/sh/redis_{{redis_port}}.sh start
+  when: start_service == 'true'
+  tags:
+    - start_redis_service
+
+- name: check_redis
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep redis_6379 | wc -l
+  register: check_redis
+  tags:
+    - check_redis
+
+- name: auto_start_redis_apps
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/sh/redis_{{redis_port}}.sh start\"" >> /etc/rc.local
+  when: check_redis.stdout == '0'
+  tags:
+    - auto_start_redis_apps
+
+- name: exec_rc_local
+  become_user: root
+  become: yes
+  shell: sudo chmod +x /etc/rc.d/rc.local
+  tags:
+    - exec_rc_local
+
+- name: init_redis_logrotate
+  become_user: root
+  become: yes
+  template: src="dbredis.j2" dest="/etc/logrotate.d/dbredis-{{redis_port}}" owner=root group=root mode=0644
+  tags:
+    - init_dbredis_logrotate
+

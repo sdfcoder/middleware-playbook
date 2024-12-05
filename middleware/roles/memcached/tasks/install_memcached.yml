@@ -1,0 +1,92 @@
+---
+- name: copy_libevent
+  synchronize: mode=push src="libevent-2.1.8/libevent{{item}}" dest="/usr/lib" compress=yes
+  with_items: [-2.1.so.6.0.2,.a,.la,_core-2.1.so.6.0.2,_core.a,_core.la,_extra-2.1.so.6.0.2,_extra.a,_extra.la,_openssl-2.1.so.6.0.2,_openssl.a,_openssl.la,_pthreads-2.1.so.6.0.2,_pthreads.a,_pthreads.la]
+  tags:
+    - copy_libevent
+  become_user: root
+  become: yes
+  become_method: sudo
+
+- name: link_libevent
+  file: src="/usr/lib/libevent{{item}}-2.1.so.6.0.2" dest="/usr/lib/libevent{{item}}-2.1.so.6" state=link force=yes group=root owner=root
+  with_items: [_core,_extra,_openssl,_pthreads,'']
+  tags:
+    - link_libevent
+  become_user: root
+  become: yes
+  become_method: sudo
+
+- name: link_libevent_so
+  file: src="/usr/lib/libevent{{item}}-2.1.so.6.0.2" dest="/usr/lib/libevent{{item}}.so" state=link force=yes group=root owner=root
+  with_items: [_core,_extra,_openssl,_pthreads,'']
+  tags:
+    - link_libevent_so
+  become_user: root
+  become: yes
+  become_method: sudo
+
+#### Make sure YUM Packages
+- name: init_yum_pkgs
+  yum: name={{item}} state=present
+  with_items: [psmisc]
+  become: yes
+  become_user: root
+  ignore_errors: yes
+  tags:
+    - init_yum_pkgs        
+
+- name: init_memcached_svr
+  unarchive: src="../../sharestorage/apps/svr/memcached-1.5.12.tar.gz" dest="/apps/svr/" owner=apps group=apps mode=0775
+  tags:
+    - init_memcached_svr
+
+- name: link_memcached
+  file: src="/apps/svr/memcached-1.5.12" dest="/apps/svr/memcached" state=link force=yes group=apps owner=apps
+  tags:
+    - link_memcached
+
+- name: init_memcached_dir
+  file: path="/apps/{{item}}/memcached" state=directory owner=apps group=apps mode=0775
+  with_items: [logs,run]
+  tags:
+    - init_memcached_dir
+
+- name: init_script
+  template: src="memcached.sh" dest="/apps/sh/memcached.sh" group=apps owner=apps mode=0775
+  tags:
+    - init_script
+
+- name: start_memcached_service
+  shell: /apps/sh/memcached.sh restart
+  when: start_service == 'true'
+  tags:
+    - start_memcached_service
+
+- name: init_memcached_logrotate
+  become_user: root
+  become: yes
+  template: src="memcached_log.j2" dest="/etc/logrotate.d/memcached" owner=root group=root mode=0644
+  tags:
+    - init_memcached_logrotate
+
+- name: check_memcached
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep memcached.sh | wc -l
+  register: check_memcached
+  tags:
+    - check_memcached
+
+- name: auto_start_memcached
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/sh/memcached.sh start\"" >> /etc/rc.local
+  when: check_memcached.stdout == '0'
+  tags:
+    - auto_start_memcached
+
+- name: exec_rc_local
+  become_user: root
+  become: yes
+  shell: sudo chmod +x /etc/rc.d/rc.local
+  tags:
+    - exec_rc_local

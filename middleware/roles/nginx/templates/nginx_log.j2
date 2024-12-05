@@ -1,0 +1,12 @@
+/apps/logs/nginx_80/*.log
+{
+        su root root
+        create 0644 root root
+        daily
+        dateext
+        compress
+        copytruncate
+        notifempty
+        rotate 30
+        missingok 
+}

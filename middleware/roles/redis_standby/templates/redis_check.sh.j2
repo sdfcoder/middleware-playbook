@@ -1,0 +1,14 @@
+#!/bin/bash 
+PASSWD="{{redis_password}}"
+ALIVE=`/apps/svr/redis_6379/src/redis-cli -h $1 -p $2 -a $PASSWD PING`
+RESULT=$(echo $ALIVE | grep "PONG")
+LOGFILE="/apps/logs/redis_6379/keepalived-redis-check.log"
+echo "[CHECK]" >> $LOGFILE
+date >> $LOGFILE
+if [ $RESULT != '' ]; then :
+   echo "Success:redis-cli -h $1 -p $2 PING $ALIVE" >> $LOGFILE 2>&1
+    exit 0 
+else 
+    echo "Failed:redis-cli -h $1 -p $2 PING $ALIVE " >> $LOGFILE 2>&1
+    exit 1 
+fi

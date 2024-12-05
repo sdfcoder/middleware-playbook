@@ -1,0 +1,67 @@
+#!/bin/bash
+
+port={{redis_port}}
+redis_home=/apps/svr/redis_$port
+redis_bin=$redis_home/src
+conf_file=$redis_home/conf/redis.conf
+pid_file=$redis_home/run/redis.pid
+
+start() {
+flag=`netstat -nltp|grep redis|grep :$port |wc -l`
+if [ $flag -eq 0 ];then
+    $redis_bin/redis-server $conf_file
+    echo "Start redis server successfully"
+else
+    echo "The redis is already running"
+fi
+}
+
+stop() {
+flag=`netstat -nltp|grep redis|grep :$port|wc -l`
+if [ $flag -eq 0 ];then
+    echo "The redis is not running"
+else
+    $redis_bin/redis-admin shutdown
+    flag=`netstat -nltp|grep redis|grep $port|wc -l`
+    if [ $flag -eq 0 ];then
+        echo "stop redis server successfully"
+    else
+        kill -9 `cat $pid_file`
+        rm -f $pid_file
+        flag=`netstat -nltp|grep redis|grep :$port|wc -l`
+        if [ $flag -eq 0 ];then
+            echo "stop redis server successfully"
+        else
+            echo "Stop redis server failed"
+        fi
+    fi
+fi
+}
+
+status() {
+if [ -f "$pid_file" ];then
+echo "the redis is running"
+else
+echo "the redis is not running"
+fi
+}
+
+mode=$1
+case "$mode" in
+start)
+start
+;;
+stop)
+stop
+;;
+restart)
+stop
+sleep 2
+start
+;;
+status)
+status
+;;
+*)
+echo "Usage: $0 start|stop|restart|status"
+esac

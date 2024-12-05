@@ -1,0 +1,4 @@
+[redis]
+10.142.71.133 redis_password=qwe123 redis_mode=cluster cluster_role=creator cluster_members='["10.142.71.133","10.142.71.134","10.142.71.135"]' start_service=true 
+10.142.71.134 redis_password=qwe123 redis_mode=cluster cluster_role=member start_service=true
+10.142.71.135 redis_password=qwe123 redis_mode=cluster cluster_role=member start_service=true

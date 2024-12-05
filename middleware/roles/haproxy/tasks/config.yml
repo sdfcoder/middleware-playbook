@@ -1,0 +1,92 @@
+---
+#### Install haproxy_config
+- name: init_haproxy_conf
+  template: src="haproxy.cfg.j2" dest="/apps/conf/haproxy/haproxy.cfg" owner=apps group=apps mode=0775
+  tags:
+    - init_haproxy_conf
+
+#### Init auto start
+- name: check_haproxy
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep haproxy.sh | wc -l
+  register: haproxy_check
+  tags:
+    - check_haproxy
+
+- name: backup_rc_local
+  become: yes
+  become_user: root
+  shell: "/usr/bin/cp -rp /etc/rc.d/rc.local /etc/rc.d/rc.local.bak.`date \"+%Y%m%d%H%M\"`"
+  when: haproxy_check.stdout == '0'
+  tags:
+    - backup_rc_local
+
+- name: insert_auto_start
+  become: yes
+  become_user: root
+  shell: /usr/bin/echo "/apps/sh/haproxy.sh start" >> /etc/rc.local
+  when: haproxy_check.stdout == '0'
+  tags:
+    - insert_auto_start
+
+- name: chage_rc_local_mode
+  become: yes
+  become_user: root
+  shell: "/usr/bin/chmod +x /etc/rc.d/rc.local"
+  when: haproxy_check.stdout == '0'
+  tags:
+    - chage_rc_local_mode
+
+#### Init haproxy log
+- name: check_haproxy_log
+  shell: /usr/bin/grep -vE '^#' /etc/rsyslog.conf | grep haproxy.log | wc -l
+  register: haproxy_log
+  tags:
+    - check_haproxy_log
+
+- name: backup_rsyslog_conf
+  become: yes
+  become_user: root
+  shell: "/usr/bin/cp -rp /etc/rsyslog.conf /etc/rsyslog.conf.bak.`date \"+%Y%m%d%H%M\"`"
+  when: haproxy_log.stdout == '0'
+  tags:
+    - backup_rsyslog_conf
+
+- name: insert_haproxy_log
+  become: yes
+  become_user: root
+  shell: /usr/bin/echo -e "\n# Save haproxy messages to haproxy.log\nlocal2.*\t\t\t\t\t\t/apps/logs/haproxy/haproxy.log" >> /etc/rsyslog.conf
+  when: haproxy_log.stdout == '0'
+  tags:
+    - insert_haproxy_log
+
+#### Change udp log
+- name: change_udp_log
+  become: yes
+  become_user: root
+  script: ./change_udp_log.sh
+  tags:
+    - change_udp_log
+
+#### Change log conf
+- name: change_log_conf
+  become: yes
+  become_user: root
+  script: ./add_logconf.sh
+  tags:
+    - change_log_conf
+
+#### Restart rsyslog
+- name: restart_rsyslog
+  become: yes
+  become_user: root
+  service: name=rsyslog state=restarted
+  tags:
+    - restart_rsyslog
+
+#### Install haproxy_logrotate
+- name: init_haproxy_logrotate
+  become_user: root
+  become: yes
+  template: src="haproxy_log.j2" dest="/etc/logrotate.d/haproxy" owner=root group=root mode=0644
+  tags:
+    - init_haproxy_logrotate

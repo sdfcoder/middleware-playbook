@@ -1,0 +1,72 @@
+##
+
+#USER ALIAS
+User_Alias SYSTEM   = admin
+User_Alias MIDWARE  = apps
+User_Alias MONITOR  = patrol,zabbix,elk,ganglia,nrpe
+User_Alias BUSINESS = deployer
+User_Alias SAFETY = security
+User_Alias DB = dba 
+
+#SYSTEM MIDWARE MONITOR USE SUDO ALL FIRST
+SYSTEM,MIDWARE,MONITOR,DB,SAFETY ALL=(root) NOPASSWD: ALL
+
+#CMD ALIAS
+#black list
+#--------------------------------------------------------
+#power manage
+Cmnd_Alias BLACK_POWER = !/usr/sbin/reboot,!/usr/sbin/init,!/usr/sbin/halt,!/usr/sbin/poweroff,!/usr/sbin/shutdown,!/usr/bin/systemctl halt,!/usr/bin/systemctl poweroff,!/usr/bin/systemctl reboot,!/usr/bin/systemctl kexec,!/usr/bin/systemctl suspend,!/usr/bin/systemctl hibernate,!/usr/bin/systemctl hybrid-sleep,!/usr/bin/systemctl rescue,!/usr/bin/systemctl emergency
+
+#user manage
+Cmnd_Alias BLACK_USER = !/usr/sbin/adduser,!/usr/sbin/chpasswd,!/usr/sbin/groupadd,!/usr/sbin/groupdel,!/usr/sbin/groupmems,!/usr/sbin/groupmod,!/usr/sbin/grpck,!/usr/sbin/grpconv,!/usr/sbin/grpunconv,!/usr/sbin/newusers,!/usr/sbin/pwck,!/usr/sbin/pwconv,!/usr/sbin/pwunconv,!/usr/sbin/useradd,!/usr/sbin/userdel,!/usr/sbin/usermod,!/usr/sbin/vigr,!/usr/sbin/vipw,!/usr/bin/su,!/bin/passwd
+
+#file manage
+Cmnd_Alias BLACK_FILE = !/usr/bin/chown * /, !/usr/bin/chmod * /, !/usr/bin/rm * /
+
+#storage manage
+Cmnd_Alias BLACK_STORAGE = !/usr/sbin/fdisk /dev/*,!/usr/sbin/parted
+
+#network manage
+Cmnd_Alias BLACK_NETWORK = !/usr/bin/systemctl * network,!/etc/init.d/network *
+
+#ban itself
+Cmnd_Alias BLACK_ITSELF = !/usr/bin/vi /etc/sudoers.d/*,!/usr/bin/vim /etc/sudoers.d/*,!/bin/bash
+#---------------------------------------------------------
+
+#white list
+#---------------------------------------------------------
+##System Manage
+Cmnd_Alias WHITE_SYSTEM = /bin/systemctl status,/bin/chage -l,/bin/sbin/pidof,/bin/lastb,/bin/pmap,/bin/crontab -l
+
+##Network Manage
+Cmnd_Alias WHITE_NETWORK = /usr/sbin/mii-tool -v,/usr/sbin/tcpdump,/usr/sbin/iptables -nL,/usr/sbin/iptables -t nat -nL,/usr/sbin/iptables -L,/bin/netstat
+
+##Software¡¤Print¡¤Develop¡¤Tools
+Cmnd_Alias WHITE_SOFTWARE = /bin/ldd
+
+##File and Directory Manage
+Cmnd_Alias WHITE_FILE = /usr/bin/cat, /usr/bin/ls, /usr/bin/tail, /bin/grep, /usr/bin/sz, /usr/bin/rz, /usr/bin/scp, /usr/bin/find, /usr/sbin/lsof
+
+##Hardware¡¤Kernel¡¤Shell¡¤Monitor
+Cmnd_Alias WHITE_HARDWARE = /usr/sbin/dmidecode,/usr/sbin/pvdisplay,/usr/sbin/pvs,/usr/sbin/pvscan,/usr/sbin/vgdisplay,/usr/sbin/vgs,/usr/sbin/vgscan,/usr/sbin/lvdisplay,/usr/sbin/lvs,/usr/sbin/lvscan,/usr/sbin/fdisk -l,/usr/sbin/fdisk -l
+
+##Yum install and update
+Cmnd_Alias WHITE_YUM = /usr/bin/yum
+
+##zabbix cmd
+Cmnd_Alias WHITE_ZABBIX = /usr/zagt/bin/zabbix_get,/usr/zagt/bin/zabbix_sender 
+
+##apps cmd
+Cmnd_Alias WHITE_APPS = /apps/sh/*, /apps/svr/*/bin/*, /apps/svr/*/sbin/*
+
+#----------------------------------------------------------
+
+
+#NOEXEC LIST
+SYSTEM,MIDWARE,MONITOR,DB,BUSINESS     ALL=(root)   NOPASSWD:NOEXEC:/bin/vi,/bin/vim,/bin/less,/bin/more,/bin/vimdiff,/bin/vimtutor
+
+#give sudo privileges  
+SYSTEM                ALL=(root)         NOPASSWD: BLACK_POWER,BLACK_ITSELF,BLACK_STORAGE,BLACK_NETWORK
+MIDWARE,DB,MONITOR    ALL=(root)         NOPASSWD: BLACK_POWER,BLACK_ITSELF,BLACK_STORAGE,BLACK_NETWORK,BLACK_USER,BLACK_FILE
+BUSINESS              ALL=(root)         NOPASSWD: WHITE_SYSTEM, WHITE_NETWORK, WHITE_SOFTWARE, WHITE_FILE, WHITE_HARDWARE, WHITE_ZABBIX, WHITE_YUM, WHITE_APPS
+SAFETY                ALL=(root)         NOPASSWD: BLACK_POWER,BLACK_ITSELF,BLACK_STORAGE,BLACK_NETWORK,BLACK_USER,BLACK_FILE

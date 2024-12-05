@@ -1,0 +1,4 @@
+[redis-standalone]
+10.142.71.133 redis_password=qwe123 redis_mode=standalone start_service=true
+##如密码带有特殊字符例#需要\转义
+

@@ -1,0 +1,124 @@
+---
+#### Install nginx_80_svr
+- name: init_nginx_80_dirs
+  file: path=/apps/{{item}}/nginx_80 state=directory owner=apps group=apps mode=0775
+  with_items: [conf,logs,run,data]
+  tags:
+    - init_nginx_80_dirs
+
+- name: unarchive_nginx_80
+  unarchive: src="../roles/sharestorage/apps/svr/nginx-1.18.0.tar.gz" dest="/apps/svr/" owner=apps group=apps
+  tags:
+    - unarchive_nginx_80
+
+- name: link_nginx_80
+  file: src="/apps/svr/nginx-{{nginx_version}}" dest="/apps/svr/nginx_80" state=link force=yes group=apps owner=apps
+  tags:
+    - link_nginx_80
+
+- name: init_nginx_plugin
+  unarchive: src="../roles/sharestorage/apps/svr/{{item}}.tar.gz" dest="/apps/svr/" 
+  with_items: [ngx_cache_purge,nginx-http-concat,nginx-sticky-module-ng-1.2.5,nginx_upstream_check_module-master]
+  tags:
+    - init_nginx_plugin
+
+- name: link_nginx_80_dirs
+  file: src="/apps/{{item.src}}/nginx_80" dest="/apps/svr/nginx_80/{{item.dest}}" state=link force=yes group=apps owner=apps
+  with_items:
+    - { src: 'conf', dest: 'conf' }
+    - { src: 'logs', dest: 'logs' }
+    - { src: 'run', dest: 'run' }
+    - { src: 'data', dest: 'html' }
+  tags:
+    - link_nginx_80_dirs
+
+- name: link_nginx_dirs
+  file: src="/apps/lib/libgd/lib/libgd.so.3" dest="/usr/lib64/libgd.so.3" state=link force=yes group=apps owner=apps
+  tags:
+    - link_nginx_dirs
+  become_user: root
+  become: yes
+
+#### Initialize lib directory
+- name: init_nginx_lib
+  unarchive: src="apps/lib.tar.gz" dest="/apps/" 
+  tags:
+    - init_nginx_lib
+
+#### Link libs
+- name: link_nginx_lib
+  file: src="/apps/lib/{{item.origin}}" dest="/apps/lib/{{item.link}}" state=link force=yes group=apps owner=apps
+  with_items:
+    - { origin: 'freetype-2.5.5', link: 'freetype' }
+    - { origin: 'libgd-2.2.5', link: 'libgd' }
+    - { origin: 'openssl-1.0.2t', link: 'openssl' }
+    - { origin: 'zlib-1.2.11', link: 'zlib' }
+    - { origin: 'jpeg-9a', link: 'jpeg' }
+    - { origin: 'libpng-1.6.37', link: 'libpng' }
+    - { origin: 'pcre-8.37', link: 'pcre' }
+    - { origin: 'libmcrypt-2.5.7', link: 'libmcrypt' }
+  tags:
+    - link_nginx_lib
+
+- name: init_nginx_80_conf
+  synchronize: mode=push src="apps/conf/nginx_80/" dest="/apps/conf/nginx_80/" compress=yes
+  tags:
+    - init_nginx_80_conf
+
+- name: init_nginx_80_data
+  synchronize: mode=push src="apps/data/nginx_80/" dest="/apps/data/nginx_80/" compress=yes
+  tags:
+    - init_nginx_80_data
+
+- name: init_nginx_80_sh
+  synchronize: mode=push src="apps/sh/" dest="/apps/sh/" compress=yes
+  tags:
+    - init_nginx_80_sh
+
+#### Make sure YUM Packages
+- name: init_yum_pkgs
+  yum: name={{item}} state=present
+  with_items: [tar,psmisc,gcc,gcc-c++,python-devel,wget,openssh-server,git,openssl,openssl-devel,ncurses-devel,unixODBC,unixODBC-devel,fop,wxGTK,wxGTK-devel,bzip2-devel,pcre-devel,libnl3*,popt-devel,nc,lrzsz]
+  become: yes
+  become_user: root
+  ignore_errors: yes
+  tags:
+    - init_yum_pkgs
+
+#### Init auto start
+- name: check_nginx
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep nginx_80.sh | wc -l
+  register: nginx_check
+  tags:
+    - check_nginx
+
+- name: backup_rc_local
+  become: yes
+  become_user: root
+  shell: "/usr/bin/cp -rp /etc/rc.d/rc.local /etc/rc.d/rc.local.bak.`date \"+%Y%m%d%H%M\"`"
+  when: nginx_check.stdout == '0'
+  tags:
+    - backup_rc_local
+
+- name: insert_auto_start
+  become: yes
+  become_user: root
+  shell: /usr/bin/echo "/apps/sh/nginx_80.sh start" >> /etc/rc.local
+  when: nginx_check.stdout == '0'
+  tags:
+    - insert_auto_start
+
+- name: chage_rc_local_mode
+  become: yes
+  become_user: root
+  shell: "/usr/bin/chmod +x /etc/rc.d/rc.local"
+  when: nginx_check.stdout == '0'
+  tags:
+    - chage_rc_local_mode
+
+- name: init_nginx_logrotate
+  become_user: root
+  become: yes
+  template: src="nginx_log.j2" dest="/etc/logrotate.d/nginx" owner=root group=root mode=0644
+  tags:
+    - init_nginx_logrotate

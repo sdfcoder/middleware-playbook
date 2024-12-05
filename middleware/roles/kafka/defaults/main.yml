@@ -1,0 +1,36 @@
+---
+
+## General
+kafka_version: 1.1.1
+scala_version: 2.11
+
+## Service options
+
+# Owner
+kafka_user: apps
+kafka_group: apps
+
+# start on boot
+kafka_service_enabled: 'yes'
+# current state: started, stopped
+kafka_service_state: started
+
+# Files & Paths
+kafka_data_dir: "/apps/data/kafka_{{kafka_client_port}}"
+kafka_log_dir: "/apps/logs/kafka_{{kafka_client_port}}"
+kafka_install_path: "/apps/svr"
+kafka_conf_dir: "/apps/conf/kafka_{{kafka_client_port}}"
+kafka_pid_dir: "/apps/run/kafka_{{kafka_client_port}}"
+java_home_dir: "/apps/svr/jdk8"
+
+# Connection properties
+# Deprecated
+client_port: 9092
+# Deprecated
+init_limit: 5
+# Deprecated
+sync_limit: 2
+# Deprecated   (its original port was 9999,but zookeeper has already used it,so I modified it with 9988.You can use any unused one #by sjy)
+kafka_client_port: "{{client_port}}"
+jmx_port: 9988
+

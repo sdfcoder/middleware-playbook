@@ -1,0 +1,6 @@
+[activemq]
+10.142.71.133 activemq_mode=standalone  
+
+[activemq:vars]
+setenv=apps 
+push_apps_env=true

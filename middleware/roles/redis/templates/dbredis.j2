@@ -1,0 +1,12 @@
+/apps/logs/redis_{{redis_port}}/*.log  {
+    su root apps
+    daily
+    dateext
+    dateformat .%Y-%m-%d
+    rotate 30
+    copytruncate
+    delaycompress
+    compress
+    notifempty
+    missingok
+}

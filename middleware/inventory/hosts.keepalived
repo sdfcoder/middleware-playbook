@@ -1,0 +1,8 @@
+[keepalived]
+10.142.71.133 ident=master virtual_ip=10.142.71.136 router_id=136 dev=ens192 mode="" priority=100 auth=1qaz2wsx weight=-3
+10.142.71.134 ident=backup virtual_ip=10.142.71.136 router_id=136 dev=ens192 mode="" priority=99  auth=1qaz2wsx weight=-3
+10.142.71.135 ident=backup virtual_ip=10.142.71.136 router_id=136 dev=ens192 mode="" priority=98 auth=1qaz2wsx weight=-3
+#default mode="" 抢占模式
+#mode="nopreempt"  非抢占模式（ident需要为backup）
+#route_id规范：与VIP D位数字保持一致
+#两节点weight -2，三节点weight -3

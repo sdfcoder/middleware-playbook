@@ -1,0 +1,4 @@
+[tomcat]
+10.142.71.133 tomcat_version=7.0.105 http_port=8080 setenv=apps push_apps_env=true
+10.142.71.134 tomcat_version=7.0.105 http_port=8080 setenv=apps push_apps_env=true
+10.142.71.135 tomcat_version=7.0.105 http_port=8080 setenv=apps push_apps_env=true

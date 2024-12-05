@@ -1,0 +1,6 @@
+[jdk8]
+10.142.71.133 setenv=deployer push_apps_env=true
+10.142.71.134 setenv=all push_apps_env=true
+10.142.71.135 setenv=apps push_apps_env=true
+
+#可使用apps|deployer|all针对性的设置变量环境(默认均使用apps)

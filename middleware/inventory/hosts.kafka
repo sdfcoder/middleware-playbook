@@ -1,0 +1,12 @@
+[kafka]
+10.142.71.133 id=1
+10.142.71.134 id=2
+10.142.71.135 id=3
+
+##zjj01-03替换为实际hostname，/etc/hosts中对应关系记得写入
+
+[kafka:vars]
+setenv=apps 
+push_apps_env=true
+zookeeper_nodes=zjj01:2181,zjj02:2181,zjj03:2181
+

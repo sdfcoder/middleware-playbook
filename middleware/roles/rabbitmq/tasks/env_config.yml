@@ -1,0 +1,72 @@
+---
+### Check_env ###
+- name: check_env_apps
+  shell: /usr/bin/grep -vE '^#' /home/apps/.bashrc |grep 'rabbitmq_5672'|wc -l
+  register: check_env_apps
+  tags:
+    - check_env_apps
+
+- name: check_env_deployer
+  shell: /usr/bin/grep -vE '^#' /home/deployer/.bashrc |grep 'rabbitmq_5672'|wc -l
+  register: check_env_deployer
+  tags:
+    - check_env_deployer
+
+- name: check_env_all
+  shell: /usr/bin/grep -vE '^#' /etc/profile |grep 'rabbitmq_5672'|wc -l 
+  register: check_env_all
+  tags:
+    - check_env_all
+
+### Export_env ###
+
+- name: push_env_file
+  copy: src="rabbitmq_env.sh" dest="/tmp" owner=apps group=apps
+  tags:
+    - push_env_file
+
+- name: set_env_all
+  shell: cat /tmp/rabbitmq_env.sh >> /etc/profile
+  when: setenv == 'all' and check_env_all.stdout == '0'
+  tags: 
+    - set_env_all
+  become_user: root
+  become: yes
+
+- name: set_env_deployer
+  shell: cat /tmp/rabbitmq_env.sh >> /home/deployer/.bashrc
+  when: setenv == 'deployer' and check_env_deployer.stdout == '0'
+  tags: 
+    - set_env_deployer
+  become_user: root
+  become: yes
+
+- name: set_env_apps
+  shell: cat /tmp/rabbitmq_env.sh >> /home/apps/.bashrc
+  when: setenv == 'apps' and check_env_apps.stdout == '0'
+  tags:
+    - set_env_apps
+
+- name: remove_env_sh
+  shell: rm -rf /tmp/rabbitmq_env.sh
+  tags:
+    - remove_env_sh 
+
+- name: exec_env_all
+  shell: source /etc/profile
+  when: setenv == 'all'
+  tags:
+    - exec_env
+
+- name: exec_env_deployer
+  shell: source /home/deployer/.bashrc
+  when: setenv == 'deployer'
+  tags:
+    - exec_env
+
+- name: exec_env_apps
+  shell: source /home/apps/.bashrc
+  when: setenv == 'apps'
+  tags:
+    - exec_env
+

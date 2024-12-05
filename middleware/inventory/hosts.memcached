@@ -1,0 +1,2 @@
+[memcached]
+10.142.71.133 start_service=true

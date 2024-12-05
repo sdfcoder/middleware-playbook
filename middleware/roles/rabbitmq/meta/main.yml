@@ -1,0 +1,5 @@
+---
+dependencies:
+  - { role: erlang }
+  - { role: system-init-new }
+

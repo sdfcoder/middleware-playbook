@@ -1,0 +1,15 @@
+[activemq-cluster]
+10.142.71.133 activemq_mode=cluster broker_name=mcf_10.142.71.133
+10.142.71.134 activemq_mode=cluster broker_name=mcf_10.142.71.134
+10.142.71.135 activemq_mode=cluster broker_name=mcf_10.142.71.135
+
+[activemq-cluster:vars]
+setenv=apps 
+push_apps_env=true
+mysql_vip=10.142.71.136
+mysql_port=3306
+database_name=activemq_mcf
+mysql_user_name=mcf
+mysql_user_passwd=1qaz_EDC@WSX3edc
+console_user=admin
+console_password=QAZ3edc2wsxEDC

@@ -1,0 +1,78 @@
+---
+#### Install activemq_svr
+- name: init_activemq_dirs
+  file: path=/apps/{{item}}/activemq state=directory owner=apps group=apps mode=0775
+  with_items: [conf,logs,run,data]
+  become: yes
+  become_user: root
+  tags:
+    - init_activemq_dirs
+
+- name: init_activemq_svr
+  unarchive: src="../roles/sharestorage/apps/svr/apache-activemq-5.15.3-bin.tar.gz" dest="/apps/svr/" owner=apps group=apps mode=0775
+  tags:
+    - init_activemq_svr
+
+- name: link_activemq
+  file: src="/apps/svr/apache-activemq-5.15.3" dest="/apps/svr/activemq" state=link force=yes owner=apps group=apps
+  become: yes
+  tags:
+    - link_activemq
+
+- name: link_activemq_dirs
+  file: src="/apps/{{item}}/activemq" dest="/apps/svr/activemq/{{item}}" state=link force=yes owner=apps group=apps
+  with_items: [conf,logs,run,data]
+  become: yes
+  tags:
+    - link_activemq_dirs
+
+- name: init_activemq_conf
+  unarchive: src="apps/conf/activemq.tar.gz" dest="/apps/conf/" owner=apps group=apps mode=0775
+  tags:
+    - init_activemq_conf
+
+- name: init_activemq_sh
+  copy: src="apps/sh/activemq.sh" dest="/apps/sh/activemq.sh" owner=apps group=apps mode=0775
+  tags:
+    - init_activemq_sh
+
+### Init activemq_server_logrotate
+- name: init_activemq_logrotate
+  become_user: root 
+  become: yes
+  template: src="activemq_log.j2" dest="/etc/logrotate.d/activemq" owner=root group=root mode=0644
+  tags:
+    - init_activemq_logrotate 
+
+
+### Autostart Activemq
+- name: check_activemq
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep 'active' |wc -l
+  register: check_activemq
+  tags:
+    - check_activemq
+
+- name: auto_start_activemq_apps
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/sh/activemq.sh start\"" >> /etc/rc.local
+  when: check_activemq.stdout == '0' and setenv == 'apps'
+  tags:
+    - auto_start_activemq_apps
+
+- name: auto_start_activemq_deployer
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - deployer -c \"/apps/sh/activemq.sh start\"" >> /etc/rc.local
+  when: check_activemq.stdout == '0' and setenv == 'deployer'
+  tags:
+    - auto_start_activemq_deployer
+
+- name: auto_start_activemq_root
+  become_user: root
+  become: yes
+  shell: echo "\"/apps/sh/activemq.sh start\"" >> /etc/rc.local
+  when: check_activemq.stdout == '0' and setenv == 'all'
+  tags:
+    - auto_start_activemq_root
+

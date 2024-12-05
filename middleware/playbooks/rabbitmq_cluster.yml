@@ -1,0 +1,6 @@
+---
+- hosts: all
+  gather_facts: false
+  roles:
+    - role: rabbitmq_cluster
+      when: rabbitmq_mode == 'cluster'

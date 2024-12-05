@@ -1,0 +1,10 @@
+---
+user:
+    bcop:
+        name: ftpuser
+        passwd: clm123!@#
+        dir: /apps/data
+is_download: False
+is_upload: True
+is_mkdir: True
+is_renamed: True

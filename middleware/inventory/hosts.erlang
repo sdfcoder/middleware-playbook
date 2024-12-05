@@ -1,0 +1,6 @@
+[erlang]
+10.142.71.133 setenv=apps
+10.142.71.134 setenv=apps
+10.142.71.135 setenv=apps
+
+#可使用apps|deployer|all针对性的设置变量环境

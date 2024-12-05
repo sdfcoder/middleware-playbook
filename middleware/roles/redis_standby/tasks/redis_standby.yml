@@ -1,0 +1,59 @@
+---
+- name: push_files
+  unarchive: src="keepalived_scripts.tar.gz" dest="/apps/sh/" owner=apps group=apps mode=0775
+  tags:
+    - push_files
+
+- name: push_redis_check
+  template: src="redis_check.sh.j2" dest="/apps/sh/keepalived_scripts/redis_check.sh" owner=apps group=apps mode=0775
+  tags:
+    - push_redis_check
+
+- name: set_standby
+  shell: /apps/svr/redis_6379/src/redis-admin slaveof {{master_ip}} 6379
+  when: ident == 'slave'
+  tags:
+    - set_standby
+
+- name: check_keeplived_conf_existence
+  shell: ls /apps/conf/keepalived
+  ignore_errors: True
+  register: result
+
+- name: backup_keepalived_conf
+  shell: mv /apps/conf/keepalived/keepalived.conf /apps/conf/keepalived/keepalived.conf.bak
+  ignore_errors: True
+  when: result|succeeded
+
+- name: init_conf_keepalived.conf
+  template: src="keepalived_{{ident}}.conf.j2" dest="/apps/conf/keepalived/keepalived.conf" owner=apps group=apps mode=0775
+  when: result|succeeded
+  tags:
+    - init_conf_keepalived.conf
+
+- name: init_master_ip
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#master_ip#' replace='{{master_ip}}' owner=apps group=apps mode=0775
+  when: result|succeeded
+
+- name: init_backup_ip
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#backup_ip#' replace='{{backup_ip}}' owner=apps group=apps mode=0775
+  when: result|succeeded
+
+- name: init_vip
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#virtual_ip#' replace='{{virtual_ip}}' owner=apps group=apps mode=0775
+  when: result|succeeded
+
+- name: init_router_id
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#router_id#' replace='{{router_id}}' owner=apps group=apps mode=0775
+  when: result|succeeded
+
+- name: init_dev
+  replace: dest="/apps/conf/keepalived/keepalived.conf" regexp='#dev#' replace='{{dev}}' owner=apps group=apps mode=0775
+  when: result|succeeded
+
+- name: restart_keepalived_service
+  shell: sudo /apps/sh/keepalived.sh restart
+  when: result|succeeded
+  tags:
+    - restart_keepalived_service
+

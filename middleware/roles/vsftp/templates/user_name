@@ -1,0 +1,6 @@
+virtual_use_local_privs=NO
+anon_world_readable_only={{is_download}}
+anon_upload_enable={{is_upload}}
+anon_mkdir_write_enable={{is_mkdir}}
+anon_other_write_enable={{is_renamed}}
+write_enable=YES

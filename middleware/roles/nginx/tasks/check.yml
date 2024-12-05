@@ -1,0 +1,33 @@
+---
+#### Check nginx version and status
+
+- name: check_version
+  shell: /apps/svr/nginx_80/sbin/nginx -v
+  register: version
+  become: yes
+  become_user: root
+
+- name: debug
+  debug: var=version.stderr verbosity=0
+  become: yes
+
+- name: start_nginx
+  shell: sudo /apps/sh/nginx_80.sh start
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0
+
+- name: check_nginx_status
+  shell: sudo /apps/sh/nginx_80.sh status
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0
+
+- name: stop_nginx
+  shell: sudo /apps/sh/nginx_80.sh stop
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0

@@ -1,0 +1,85 @@
+---
+#### Install erlang_svr ###
+
+- name: init_erlang_svr
+  unarchive: src="../roles/sharestorage/apps/svr/erlang-{{erlang_version}}.tar.gz" dest="/apps/svr/" owner=apps group=apps mode=0775
+  tags:
+    - init_erlang_svr
+
+- name: link_erlang
+  file: src="/apps/svr/erlang-{{erlang_version}}" dest="/apps/svr/erlang" state=link force=yes group=apps owner=apps
+  when: erlang_version == 22.3
+  tags:
+    - link_erlang
+
+### Check_env ###
+- name: check_env_apps
+  shell: /usr/bin/grep -vE '^#' /home/apps/.bashrc |grep 'ERLANG'|wc -l
+  register: check_env_apps
+  tags:
+    - check_env_apps
+
+- name: check_env_deployer
+  shell: /usr/bin/grep -vE '^#' /home/deployer/.bashrc |grep 'ERLANG'|wc -l
+  register: check_env_deployer
+  tags:
+    - check_env_deployer
+
+- name: check_env_all
+  shell: /usr/bin/grep -vE '^#' /etc/profile |grep 'ERLANG'|wc -l 
+  register: check_env_all
+  tags:
+    - check_env_all
+
+### Export_env ###
+
+- name: push_env_file
+  copy: src="erlang_env.sh" dest="/tmp" owner=apps group=apps
+  tags:
+    - push_env_file
+
+- name: set_env_all
+  shell: cat /tmp/erlang_env.sh >> /etc/profile
+  when: setenv == 'all' and check_env_all.stdout == '0'
+  tags: 
+    - set_env_all
+  become_user: root
+  become: yes
+
+- name: set_env_deployer
+  shell: cat /tmp/erlang_env.sh >> /home/deployer/.bashrc
+  when: setenv == 'deployer' and check_env_deployer.stdout == '0'
+  tags: 
+    - set_env_deployer
+  become_user: root
+  become: yes
+
+- name: set_env_apps
+  shell: cat /tmp/erlang_env.sh >> /home/apps/.bashrc
+  when: setenv == 'apps' and check_env_apps.stdout == '0'
+  tags:
+    - set_env_apps
+
+- name: remove_env_sh
+  shell: rm -rf /tmp/erlang_env.sh
+  tags:
+    - remove_env_sh 
+
+- name: exec_env_all
+  shell: source /etc/profile
+  when: setenv == 'all'
+  tags:
+    - exec_env
+
+- name: exec_env_deployer
+  shell: source /home/deployer/.bashrc
+  when: setenv == 'deployer'
+  tags:
+    - exec_env
+
+- name: exec_env_apps
+  shell: source /home/apps/.bashrc
+  when: setenv == 'apps'
+  tags:
+    - exec_env
+

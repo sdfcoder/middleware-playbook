@@ -1,0 +1,12 @@
+/apps/logs/activemq/*.log
+{
+        su root root
+        create 0644 apps apps
+        daily
+        dateext
+        compress
+        copytruncate
+        notifempty
+        rotate 30
+        missingok 
+}

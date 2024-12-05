@@ -1,0 +1,6 @@
+- hosts: all
+  gather_facts: false
+  roles:
+      - role: redis_standby
+        when: redis_mode == 'standby'
+       

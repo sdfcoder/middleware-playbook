@@ -1,0 +1,41 @@
+---
+#### Install keepalived_svr
+- name: init_keepalived_dirs
+  file: path=/apps/{{item}}/keepalived state=directory owner=apps group=apps mode=0775
+  with_items: [conf,logs,run]
+  tags:
+    - init_keepalived_dirs
+
+#### Unarchive keepalived_tar
+- name: unarchive_keepalived_tar
+  unarchive: src="../roles/sharestorage/apps/svr/keepalived-1.2.16.tar.gz" dest="/apps/svr/" owner=apps group=apps
+  become: yes
+  tags:
+    - unarchive_keepalived_tar
+          
+
+- name: link_keepalived
+  file: src="/apps/svr/keepalived-{{keepalived_version}}" dest="/apps/svr/keepalived" state=link force=yes group=apps owner=apps
+  tags:
+    - link_keepalived
+
+- name: link_keepalived_dirs
+  file: src="/apps/{{item}}/keepalived" dest="/apps/svr/keepalived/{{item}}" state=link force=yes group=apps owner=apps
+  with_items: [conf,logs,run]
+  tags:
+    - link_keepalived_dirs
+
+- name: init_keepalived_sh
+  synchronize: mode=push src="apps/sh/" dest="/apps/sh/" compress=yes
+  tags:
+    - init_keepalived_sh
+
+#### Make sure YUM Packages
+- name: init_yum_pkgs
+  yum: name={{item}} state=present
+  with_items: [openssl,openssl-devel,ncurses-devel,unixODBC,unixODBC-devel,fop,bzip2-devel,pcre-devel,libnl3*,popt-devel,nc,lrzsz,gcc,psmisc]
+  become: yes
+  become_user: root
+  ignore_errors: yes
+  tags:
+    - init_yum_pkgs

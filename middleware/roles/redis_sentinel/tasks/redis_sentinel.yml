@@ -1,0 +1,30 @@
+---
+- name: set_standby
+  shell: /apps/svr/redis_{{redis_port}}/src/redis-admin slaveof {{master_ip}} 6379
+  when: slave == 'true'
+  tags:
+    - set_standby
+
+- name: push_redis_sentinel
+  template: src="sentinel.conf.j2" dest="/apps/conf/redis_{{redis_port}}/sentinel.conf" owner=apps group=apps mode=0775
+  tags:
+    - push_redis_sentinel
+
+- name: set_redis_sentinel
+  command: /apps/svr/redis_{{redis_port}}/src/redis-sentinel /apps/conf/redis_{{redis_port}}/sentinel.conf
+  tags:
+    - set_redis_sentinel
+
+- name: check_redis_sentinel
+  shell: /usr/bin/grep -vE '^#' /etc/rc.local | grep sentinel | wc -l
+  register: check_redis_sentinel
+  tags:
+    - check_redis_sentinel
+
+- name: auto_start_redis_sentinel
+  become_user: root
+  become: yes
+  shell: echo "/bin/su - apps -c \"/apps/svr/redis_{{redis_port}}/src/redis-sentinel /apps/conf/redis_{{redis_port}}/sentinel.conf\"" >> /etc/rc.local
+  when: check_redis_sentinel.stdout == '0'
+  tags:
+    - auto_start_redis_sentinel

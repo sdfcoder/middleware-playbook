@@ -1,0 +1,23 @@
+2020.05
+1, Tomcat优化日志切割
+2, Activemq配置优化（keepalive）
+3, Nginx增加http健康检查模块
+4, 根据SRE需求ha日志不再上报到message日志，修改rsyslog配置
+5, 加入ftp自动化推送剧本
+
+2020.07
+1,优化默认推送的rabbitmq配置参数
+2,加入并优化redis组件多模式部署
+3,优化README部署指导手册
+4,重新开启UDP上报haproxy日志，需要关注op使用ha时可能存在的日志增长过快问题
+(可将rsyslog中local2.*调整至local2.crit级别观察)
+5,更正README中ha负载移动云场景BCRDB的范例配置
+
+2020.08
+1,升级nginx至1.18.0版本
+2,升级Activemq至5.15.3版本
+
+2020.09
+1,集成kafka-2.11-1.1.1版本
+2,升级tomcat至7.0.105版本
+

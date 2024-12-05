@@ -1,0 +1,30 @@
+---
+#### Check keepalived version and status
+
+- name: check_version
+  shell: sudo /apps/svr/keepalived/sbin/keepalived -v
+  register: version
+
+- name: debug
+  debug: var=version.stderr verbosity=0
+
+- name: start_keepalived
+  shell: sudo /apps/sh/keepalived.sh start
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0
+
+- name: check_keepalived_status
+  shell: sudo /apps/sh/keepalived.sh status
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0
+
+- name: stop_keepalived
+  shell: sudo /apps/sh/keepalived.sh stop
+  register: output
+
+- name: debug
+  debug: var=output.stdout verbosity=0

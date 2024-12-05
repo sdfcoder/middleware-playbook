@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+port={{redis_port}}
+passwd={{redis_password}}
+redis_home=/apps/svr/redis_$port
+redis_bin=$redis_home/src
+
+$redis_bin/redis-cli -p $port -a $passwd "$@"

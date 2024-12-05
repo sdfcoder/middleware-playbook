@@ -1,0 +1,8 @@
+[zookeeper]
+10.142.71.133 id=1
+10.142.71.134 id=2
+10.142.71.135 id=3
+
+[zookeeper:vars]
+setenv=apps 
+push_apps_env=true

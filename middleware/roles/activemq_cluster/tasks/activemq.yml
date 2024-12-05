@@ -1,0 +1,28 @@
+---
+
+- name: init_activemq_conf
+  unarchive: src="apps/conf/activemq.tar.gz" dest="/apps/conf/" owner=apps group=apps mode=0775
+  tags:
+    - init_activemq_conf
+
+- name: init_cluster_parameter
+  replace: dest="/apps/conf/activemq/activemq.xml" regexp={{item.reg}} replace={{item.rep}} owner=apps group=apps mode=0775
+  with_items:
+    - { reg: "#mysql_vip#", rep: "{{mysql_vip}}" }
+    - { reg: "#mysql_port#", rep: "{{mysql_port}}" }
+    - { reg: "#database_name#", rep: "{{database_name}}" }
+    - { reg: "#mysql_user_name#", rep: "{{mysql_user_name}}" }
+    - { reg: "#mysql_user_passwd#", rep: "{{mysql_user_passwd}}" }
+    - { reg: "#broker_name#", rep: "{{broker_name}}" }
+  become: yes
+  tags:
+    - init_cluster_parameter
+
+- name: init_console_parameter
+  replace: dest="/apps/conf/activemq/jetty-realm.properties" regexp={{item.reg}} replace={{item.rep}} owner=apps group=apps mode=0775
+  with_items:
+    - { reg: "#console_user#", rep: "{{console_user}}" }
+    - { reg: "#console_password#", rep: "{{console_password}}" }
+  become: yes
+  tags:
+    - init_console_parameter

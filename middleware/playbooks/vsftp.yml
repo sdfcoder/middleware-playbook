@@ -1,0 +1,4 @@
+- hosts: vsftp
+  gather_facts: false
+  roles:
+    - vsftp
